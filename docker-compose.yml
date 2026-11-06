@@ -1,0 +1,82 @@
+# Red Clínica · Entrega II — un motor por institución.
+#   i1 Hospital General         → PostgreSQL  (base hospital_general + base central red_central)
+#   i2 Clínica Odontológica     → MySQL       (base clinica_odontologica)
+#   i3 Laboratorio Clínico      → MongoDB     (replica set rs0, base laboratorio_clinico)
+#   i4 Centro Médico Pediátrico → Firestore   (Firebase Emulator, proyecto demo-red-clinica)
+#
+# Uso:  docker compose up -d   →   pnpm --dir server db:seed:firestore
+name: red-clinica
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+      RC_APP_PASSWORD: rc_app_pass
+    ports: ["5432:5432"]
+    volumes:
+      - ./server/db/postgres/00_init.sh:/docker-entrypoint-initdb.d/00_init.sh:ro
+      - ./server/db/central:/sql/central:ro
+      - ./server/db/postgres:/sql/hospital:ro
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d hospital_general"]
+      interval: 5s
+      retries: 20
+
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: clinica_odontologica
+      MYSQL_USER: rc_app
+      MYSQL_PASSWORD: rc_app_pass
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_0900_ai_ci"]
+    ports: ["3306:3306"]
+    volumes:
+      - ./server/db/mysql:/docker-entrypoint-initdb.d:ro
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 5s
+      retries: 30
+
+  # Replica set de un nodo: requisito de MongoDB para session.withTransaction().
+  mongo:
+    image: mongo:7.0
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    ports: ["27017:27017"]
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      # Inicia el replica set la primera vez; luego solo verifica que haya PRIMARY.
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --eval
+        - "try { rs.status().ok } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }] }).ok }"
+      interval: 5s
+      retries: 30
+
+  # Tarea única: colecciones, validadores $jsonSchema, índices y seed del laboratorio.
+  mongo-init:
+    image: mongo:7.0
+    depends_on:
+      mongo:
+        condition: service_healthy
+    volumes:
+      - ./server/db/mongo:/scripts:ro
+    entrypoint: ["mongosh", "mongodb://mongo:27017/laboratorio_clinico?directConnection=true", "--file", "/scripts/init.js"]
+    restart: "no"
+
+  firestore:
+    build: ./server/db/firestore
+    ports: ["8080:8080"]
+
+volumes:
+  pg_data:
+  mysql_data:
+  mongo_data:

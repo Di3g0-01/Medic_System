@@ -1,8 +1,9 @@
 import { patients } from "../mocks/data";
 import type { Patient, PatientStatus } from "../types";
 import { mockResponse } from "./api";
+import { enc, http, orUndefined, USE_MOCKS } from "./httpClient";
 
-export const pacientesService = {
+const mock = {
   list: (institutionId?: string) =>
     mockResponse(
       institutionId ? patients.filter((p) => p.institutionId === institutionId) : patients,
@@ -33,3 +34,19 @@ export const pacientesService = {
     return mockResponse(patient);
   },
 };
+
+/** Campos que el backend permite modificar (OP-PAC-04 / 05). */
+const EDITABLE = ["phone", "email", "address", "municipality", "department", "status"] as const;
+
+const api: typeof mock = {
+  // La institución sale del token (OP-SEC-02); el parámetro se conserva por compatibilidad.
+  list: () => http.get<Patient[]>("/patients"),
+  get: (id) => orUndefined(http.get<Patient>(`/patients/${enc(id)}`)),
+  validateUnique: (cui, email) => http.post<{ cui: boolean; email: boolean }>("/patients/validate-unique", { cui, email }),
+  create: (patient) => http.post<Patient>("/patients", patient),
+  update: (id, changes) =>
+    http.patch<Patient>(`/patients/${enc(id)}`, Object.fromEntries(EDITABLE.filter((k) => k in changes).map((k) => [k, changes[k]]))),
+  updateStatus: (id, status) => http.patch<Patient>(`/patients/${enc(id)}/status`, { status }),
+};
+
+export const pacientesService = USE_MOCKS ? mock : api;

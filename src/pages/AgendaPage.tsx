@@ -5,7 +5,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { useAuth } from "../hooks/useAuth";
 import { consultasService } from "../services/consultasService";
 import { pacientesService } from "../services/pacientesService";
-import type { Appointment, Patient } from "../types";
+import type { Appointment, Doctor, Patient } from "../types";
 
 export function AgendaPage() {
   const { session } = useAuth();
@@ -17,15 +17,22 @@ export function AgendaPage() {
   const [editing, setEditing] = useState<Appointment | null>(null);
   const [draft, setDraft] = useState({ patientId: "", time: "09:00", reason: "" });
 
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
   const refresh = () =>
     session &&
     Promise.all([
       consultasService.listAppointments(session.institution.id),
       pacientesService.list(),
-    ]).then(([a, p]) => {
+      consultasService.listDoctors(session.institution.id),
+    ]).then(([a, p, d]) => {
       setAppointments(a);
       setPatients(p);
+      setDoctors(d);
     });
+  // Médico de la nueva cita: el propio médico, o el seleccionado en la vista (secretaría).
+  const appointmentDoctor = () =>
+    session?.user.doctorId ??
+    (doctor !== "todos" ? doctor : (doctors[0]?.id ?? session?.user.id ?? ""));
   useEffect(() => {
     refresh();
   }, [session]);
@@ -54,7 +61,7 @@ export function AgendaPage() {
       await consultasService.createAppointment({
         ...draft,
         date,
-        doctorId: session.user.id,
+        doctorId: appointmentDoctor(),
         institutionId: session.institution.id,
         status: "programada",
       });
@@ -96,7 +103,13 @@ export function AgendaPage() {
             className="min-w-56"
           >
             <option value="todos">Todos los médicos</option>
-            {session && <option value={session.user.id}>{session.user.name}</option>}
+            {doctors.length
+              ? doctors.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))
+              : session && <option value={session.user.id}>{session.user.name}</option>}
           </Select>
         </div>
         <div className="grid min-h-[430px] md:grid-cols-[90px_1fr]">

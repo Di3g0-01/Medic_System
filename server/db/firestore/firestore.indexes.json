@@ -1,0 +1,29 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "consultas",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "id_paciente", "order": "ASCENDING" },
+        { "fieldPath": "fecha_hora", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "consultas",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "id_medico", "order": "ASCENDING" },
+        { "fieldPath": "fecha_hora", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "examenes_laboratorio",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "id_paciente", "order": "ASCENDING" },
+        { "fieldPath": "fecha_solicitud", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

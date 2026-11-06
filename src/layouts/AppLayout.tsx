@@ -10,15 +10,29 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, Navigate, Outlet, useLocation } from "react-router";
 import { Logo } from "../components/Logo";
 import { useAuth } from "../hooks/useAuth";
+import { API_ERROR_EVENT } from "../services/httpClient";
 
 export function AppLayout() {
   const { session, loading, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  // Manejo central de errores de la API: aviso discreto, solo cuando una operación falla.
+  useEffect(() => {
+    const onError = (event: Event) => setApiError((event as CustomEvent<string>).detail);
+    window.addEventListener(API_ERROR_EVENT, onError);
+    return () => window.removeEventListener(API_ERROR_EVENT, onError);
+  }, []);
+  useEffect(() => {
+    if (!apiError) return;
+    const timer = setTimeout(() => setApiError(null), 6000);
+    return () => clearTimeout(timer);
+  }, [apiError]);
 
   if (loading) return <div className="min-h-screen bg-slate-50" />;
   if (!session) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
@@ -80,7 +94,11 @@ export function AppLayout() {
       <div className="border-t border-slate-100 p-4">
         <div className="rounded-xl bg-slate-50 p-3">
           <div className="text-xs font-semibold text-slate-800">{session.institution.name}</div>
-          <div className="mt-1 text-[11px] text-slate-500">Sesión institucional activa</div>
+          <div className="mt-1 text-[11px] text-slate-500">
+            {session.institution.engine
+              ? `Conectado a: ${session.institution.name} (${session.institution.engine})`
+              : "Sesión institucional activa"}
+          </div>
         </div>
       </div>
     </>
@@ -147,6 +165,17 @@ export function AppLayout() {
         <main className="mx-auto max-w-[1440px] p-4 md:p-8">
           <Outlet />
         </main>
+        {apiError && (
+          <div
+            role="alert"
+            className="fixed bottom-5 right-5 z-50 flex max-w-sm items-start gap-3 rounded-xl border border-red-100 bg-white px-4 py-3 text-sm text-red-700 shadow-lg"
+          >
+            <span className="flex-1">{apiError}</span>
+            <button onClick={() => setApiError(null)} className="text-red-400 hover:text-red-600" title="Cerrar">
+              <X size={16} />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

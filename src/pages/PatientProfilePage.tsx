@@ -66,9 +66,9 @@ export function PatientProfilePage() {
       pacientesService.get(id),
       consultasService.getPatientConsultations(id),
       laboratorioService.forPatient(id),
-      clinicalService.getGrowthRecords(),
-      clinicalService.getVaccines(),
-      clinicalService.getAdmissions(),
+      clinicalService.getGrowthRecords(id),
+      clinicalService.getVaccines(id),
+      clinicalService.getAdmissions(id),
     ]).then(([p, c, o, g, v, a]) => {
       setPatient(p);
       setConsultations(c);

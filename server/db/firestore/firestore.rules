@@ -1,0 +1,113 @@
+rules_version = '2';
+
+// =====================================================================
+// Centro Médico Pediátrico (i4) · Firestore Security Rules (Eje C).
+// Claims del token: role ('medico' | 'secretaria' | 'admin') e institutionId (número).
+//
+// Nota: el backend usa firebase-admin, que NO evalúa estas reglas; ahí el
+// RBAC lo aplica la capa de aplicación con proyecciones. Estas reglas
+// protegen cualquier acceso directo de clientes (SDK web/móvil) y se
+// prueban contra el emulador en server/test/firestore.rules.test.ts.
+//
+// Las reglas son por documento, no por campo: como consultas/{id} embebe
+// notas y diagnósticos, la secretaría no puede leerlo directamente.
+// =====================================================================
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function role() { return request.auth.token.role; }
+    function isMedico() { return signedIn() && role() == 'medico'; }
+    function isSecretaria() { return signedIn() && role() == 'secretaria'; }
+    function isAdmin() { return signedIn() && role() == 'admin'; }
+    function ownInstitution(data) { return signedIn() && data.id_institucion == request.auth.token.institutionId; }
+    function patient(pid) { return get(/databases/$(database)/documents/pacientes/$(pid)).data; }
+    function consultation(cid) { return get(/databases/$(database)/documents/consultas/$(cid)).data; }
+
+    match /instituciones/{id} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    match /medicos/{id} {
+      allow read: if ownInstitution(resource.data);
+      allow create, update: if isAdmin() && ownInstitution(request.resource.data);
+      allow delete: if false;
+    }
+
+    // Catálogos maestros: públicos para usuarios autenticados, gestionados por admin.
+    match /medicamentos/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+    match /vacunas/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+    match /tipos_examen/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // Paciente: datos confidenciales (alergias y contactos embebidos).
+    match /pacientes/{pid} {
+      allow read: if ownInstitution(resource.data);
+      allow create: if (isMedico() || isSecretaria()) && ownInstitution(request.resource.data)
+                    && request.resource.data.estado == 'activo';
+      allow update: if (isMedico() || isSecretaria()) && ownInstitution(resource.data)
+                    && request.resource.data.id_institucion == resource.data.id_institucion
+                    && request.resource.data.dpi_cui == resource.data.dpi_cui;
+      allow delete: if false; // archivado lógico (OP-PAC-05)
+
+      // Antropometría y vacunas: información restringida, solo médicos.
+      match /crecimiento/{rid} {
+        allow read, create: if isMedico() && ownInstitution(patient(pid));
+        allow update, delete: if false;
+      }
+      match /vacunas/{vid} {
+        allow read, create: if isMedico() && ownInstitution(patient(pid));
+        allow update, delete: if false;
+      }
+    }
+
+    // Unicidad de DPI/correo: documentos centinela creados en la misma transacción que el paciente.
+    match /pacientes_dpi/{dpi} {
+      allow read: if false;
+      allow create: if isMedico() || isSecretaria();
+      allow update, delete: if false;
+    }
+    match /pacientes_correo/{correo} {
+      allow read: if false;
+      allow create: if isMedico() || isSecretaria();
+      allow update, delete: if false;
+    }
+
+    match /consultas/{cid} {
+      allow read: if isMedico() && ownInstitution(resource.data);
+      allow create: if ownInstitution(request.resource.data) && (
+        isMedico() ||
+        (isSecretaria() && request.resource.data.estado == 'programada'
+          && request.resource.data.get('notas_clinicas', null) == null
+          && request.resource.data.diagnosticos.size() == 0)
+      );
+      allow update: if ownInstitution(resource.data)
+        && request.resource.data.id_institucion == resource.data.id_institucion && (
+          isMedico() ||
+          (isSecretaria()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fecha_hora', 'estado', 'motivo_consulta', 'id_medico'])
+            && request.resource.data.estado in ['programada', 'cancelada'])
+        );
+      allow delete: if false;
+    }
+
+    match /examenes_laboratorio/{eid} {
+      allow read, update: if isMedico() && ownInstitution(consultation(resource.data.id_consulta));
+      allow create: if isMedico() && ownInstitution(consultation(request.resource.data.id_consulta))
+                    && request.resource.data.estado == 'solicitado';
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

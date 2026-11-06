@@ -8,6 +8,8 @@ export interface Institution {
   name: string;
   shortName: string;
   type: InstitutionType;
+  /** Motor de base de datos que atiende la sede (solo con API real). */
+  engine?: string;
 }
 
 export interface User {
@@ -18,6 +20,8 @@ export interface User {
   institutionId: string;
   specialty?: string;
   blocked?: boolean;
+  /** Perfil profesional (medico.id_medico) en el motor de su institución. */
+  doctorId?: string;
 }
 
 export interface EmergencyContact {
@@ -82,6 +86,8 @@ export interface Prescription {
   frequency: string;
   duration: string;
   instructions: string;
+  /** Diagnóstico que fundamenta la receta (cadena diagnóstico → tratamiento → receta). */
+  diagnosisId?: string;
 }
 
 export interface Consultation {
@@ -100,6 +106,8 @@ export interface Consultation {
 export interface LabOrder {
   id: string;
   patientId: string;
+  /** Consulta en la que se ordenó el examen (examen.id_consulta). */
+  consultationId?: string;
   type: string;
   requestedAt: string;
   status: "solicitado" | "en_proceso" | "completado";
@@ -135,4 +143,10 @@ export interface CatalogItem {
   name: string;
   detail: string;
   status: "activo" | "inactivo";
+}
+
+export interface Doctor {
+  id: string;
+  name: string;
+  specialty?: string;
 }

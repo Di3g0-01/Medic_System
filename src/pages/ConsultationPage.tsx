@@ -44,7 +44,7 @@ export function ConsultationPage() {
       { medicine: "Paracetamol 500 mg", dose: "", frequency: "", duration: "", instructions: "" },
     ]);
   const save = async (attended: boolean) => {
-    await consultasService.saveConsultation({
+    const savedConsultation = await consultasService.saveConsultation({
       id: crypto.randomUUID(),
       patientId,
       date: new Date().toISOString().slice(0, 10),
@@ -69,6 +69,7 @@ export function ConsultationPage() {
       };
       await laboratorioService.create({
         patientId,
+        consultationId: savedConsultation?.id,
         type: exam,
         requestedAt: new Date().toISOString().slice(0, 10),
         status: "solicitado",

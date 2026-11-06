@@ -1,0 +1,43 @@
+{
+  "name": "red-clinica-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Backend REST hexagonal multi-motor (PostgreSQL, MySQL, MongoDB, Firestore) — Entrega II BDII",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=.env src/main.ts",
+    "start": "tsx --env-file-if-exists=.env src/main.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:seed:firestore": "tsx --env-file-if-exists=.env db/firestore/seed.ts",
+    "cross-test": "CROSS_REPORT=1 vitest run test/cross-engine.test.ts"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "express": "^5.3.0",
+    "firebase-admin": "^14.5.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongodb": "^7.8.0",
+    "mysql2": "^3.24.6",
+    "pg": "^8.23.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^6.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^22.20.5",
+    "@types/pg": "^8.23.1",
+    "@types/supertest": "^7.2.1",
+    "firebase": "^13.2.0",
+    "supertest": "^7.3.1",
+    "tsx": "^4.23.15",
+    "typescript": "~5.7.3",
+    "vitest": "^3.2.7"
+  }
+}

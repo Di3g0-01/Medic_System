@@ -45,10 +45,10 @@ Antes de codificar, se deben resolver las inconsistencias detectadas en la retro
 
 | Institución | Motor Confirmado | Justificación de Arquitectura y Carga | Estado de Implementación |
 | :--- | :--- | :--- | :--- |
-| **Hospital General** | **PostgreSQL** | Alto volumen de transacciones concurrentes, soporte de internamientos hospitalarios críticos, diagnósticos cruzados y necesidad de transaccionalidad ACID estricta con aislamiento MVCC. | `[ ]` *Pendiente / En proceso / Implementada* |
-| **Clínica Odontológica** | **MySQL** | Enfoque en agilidad de citas y agenda externa, operaciones predominantes de lectura rápida (citas del día), estructura altamente estructurada y bajo overhead administrativo. | `[ ]` *Pendiente / En proceso / Implementada* |
-| **Laboratorio Clínico** | **MongoDB** | Esquema flexible (documentos BSON) para albergar resultados analíticos heterogéneos y dinámicos (valores numéricos, cualitativos, antibiogramas, perfiles hormonales) sin alterar DDLs. | `[ ]` *Pendiente / En proceso / Implementada* |
-| **Centro Médico Pediátrico** | **Firebase (Firestore)** | Sincronización reactiva de eventos clínicos, trazabilidad ágil para seguimiento continuo de curvas somatométricas y esquemas de vacunación. | `[ ]` *Pendiente / En proceso / Implementada* |
+| **Hospital General** | **PostgreSQL** | Alto volumen de transacciones concurrentes, soporte de internamientos hospitalarios críticos, diagnósticos cruzados y necesidad de transaccionalidad ACID estricta con aislamiento MVCC. | `[x]` **Implementada** |
+| **Clínica Odontológica** | **MySQL** | Enfoque en agilidad de citas y agenda externa, operaciones predominantes de lectura rápida (citas del día), estructura altamente estructurada y bajo overhead administrativo. | `[x]` **Implementada** |
+| **Laboratorio Clínico** | **MongoDB** | Esquema flexible (documentos BSON) para albergar resultados analíticos heterogéneos y dinámicos (valores numéricos, cualitativos, antibiogramas, perfiles hormonales) sin alterar DDLs. | `[x]` **Implementada** |
+| **Centro Médico Pediátrico** | **Firebase (Firestore)** | Sincronización reactiva de eventos clínicos, trazabilidad ágil para seguimiento continuo de curvas somatométricas y esquemas de vacunación. | `[x]` **Implementada** |
 
 ---
 
@@ -160,61 +160,61 @@ Debe redactarse una sección formal que compare los cuatro motores con los sigui
 Utiliza este checklist como guía paso a paso para la IA y el equipo:
 
 ### Fase 1: Unificación y Preparación del Modelo
-- [ ] **1.1** Corregir el script/esquema relacional: incorporar `receta` (relacionando `tratamiento` y `medicamento`) y separar `vacuna` de `esquema_vacunacion`.
-- [ ] **1.2** Unificar campos en tabla `paciente`: `estado` ('activo','archivado','fallecido'), `id_institucion`, `dpi_cui` único.
-- [ ] **1.3** Unificar campos en tabla `consulta`: `estado` ('programada','atendida','cancelada'), `id_institucion`, `id_medico`, `id_paciente`.
-- [ ] **1.4** Crear DDL / migraciones oficiales para **PostgreSQL** y **MySQL**.
-- [ ] **1.5** Crear esquemas / interfaces / scripts de inicialización para colecciones de **MongoDB** y **Firebase Firestore**.
-- [ ] **1.6** Llenar la tabla de estado de implementación de las 4 bases de datos.
+- [x] **1.1** Corregir el script/esquema relacional: incorporar `receta` (relacionando `tratamiento` y `medicamento`) y separar `vacuna` de `esquema_vacunacion`.
+- [x] **1.2** Unificar campos en tabla `paciente`: `estado` ('activo','archivado','fallecido'), `id_institucion`, `dpi_cui` único.
+- [x] **1.3** Unificar campos en tabla `consulta`: `estado` ('programada','atendida','cancelada'), `id_institucion`, `id_medico`, `id_paciente`.
+- [x] **1.4** Crear DDL / migraciones oficiales para **PostgreSQL** y **MySQL**.
+- [x] **1.5** Crear esquemas / interfaces / scripts de inicialización para colecciones de **MongoDB** y **Firebase Firestore**.
+- [x] **1.6** Llenar la tabla de estado de implementación de las 4 bases de datos.
 
 ### Fase 2: Arquitectura Hexagonal y Puertos
-- [ ] **2.1** Crear directorio de dominio: entidades puras del expediente clínico (`Patient`, `Consultation`, `Diagnosis`, `Treatment`, `Prescription`).
-- [ ] **2.2** Definir interfaces de puertos (Ports):
+- [x] **2.1** Crear directorio de dominio: entidades puras del expediente clínico (`Patient`, `Consultation`, `Diagnosis`, `Treatment`, `Prescription`).
+- [x] **2.2** Definir interfaces de puertos (Ports):
   - `IPatientPort`
   - `IConsultationPort`
   - `IPrescriptionPort`
   - `ILabPort`
   - `IAuthPort`
-- [ ] **2.3** Implementar el `DatabaseAdapterFactory` que resuelva el adaptador según la institución del usuario autenticado.
-- [ ] **2.4** Implementar adaptadores secundarios (Adapters):
-  - [ ] Adaptador PostgreSQL (Hospital General)
-  - [ ] Adaptador MySQL (Clínica Odontológica)
-  - [ ] Adaptador MongoDB (Laboratorio Clínico)
-  - [ ] Adaptador Firebase Firestore (Centro Médico Pediátrico)
+- [x] **2.3** Implementar el `DatabaseAdapterFactory` que resuelva el adaptador según la institución del usuario autenticado.
+- [x] **2.4** Implementar adaptadores secundarios (Adapters):
+  - [x] Adaptador PostgreSQL (Hospital General)
+  - [x] Adaptador MySQL (Clínica Odontológica)
+  - [x] Adaptador MongoDB (Laboratorio Clínico)
+  - [x] Adaptador Firebase Firestore (Centro Médico Pediátrico)
 
 ### Fase 3: Operaciones Transaccionales del Sistema (Catálogo)
-- [ ] **3.1 Módulo Pacientes:**
-  - [ ] `OP-PAC-01`: Registro de paciente con validación de unicidad de DPI/correo y registro de alergias.
-  - [ ] `OP-PAC-02`: Registro de contactos de emergencia.
-  - [ ] `OP-PAC-03`: Búsqueda/consulta de perfil sociodemográfico y antecedentes por DPI o ID.
-  - [ ] `OP-PAC-04`: Modificación de datos de contacto o residencia.
-  - [ ] `OP-PAC-05`: Baja lógica o archivado del paciente (`estado = 'archivado'` o `'fallecido'`).
-- [ ] **3.2 Módulo Consultas:**
-  - [ ] `OP-CON-01`: Programar cita / consulta médica.
-  - [ ] `OP-CON-02`: Atender consulta capturando motivo, notas clínicas y marcando estado `atendida`.
-  - [ ] `OP-CON-03`: Cancelar o reprogramar cita médica.
-  - [ ] `OP-CON-04`: Listar consultas por médico y fecha.
-- [ ] **3.3 Módulo Diagnóstico y Farmacoterapia:**
-  - [ ] `OP-FAR-01`: Asignar uno o más diagnósticos (con CIE-10) a una consulta atendida.
-  - [ ] `OP-FAR-02`: Crear plan de tratamiento vinculado al diagnóstico.
-  - [ ] `OP-FAR-03`: Generar recetas con medicamentos dosificados vinculados al tratamiento.
-  - [ ] `OP-FAR-04`: Consultar historial farmacoterapéutico completo del paciente a lo largo del tiempo.
-- [ ] **3.4 Módulo Seguridad y Sesiones (Enrutamiento):**
-  - [ ] `OP-SEC-01`: Autenticación de credenciales (hash comparison) y verificación de usuario activo.
-  - [ ] `OP-SEC-02`: Enrutamiento transparente a la base de datos de la institución correspondiente.
-  - [ ] `OP-SEC-03`: Registro de auditoría con timestamp de último acceso.
+- [x] **3.1 Módulo Pacientes:**
+  - [x] `OP-PAC-01`: Registro de paciente con validación de unicidad de DPI/correo y registro de alergias.
+  - [x] `OP-PAC-02`: Registro de contactos de emergencia.
+  - [x] `OP-PAC-03`: Búsqueda/consulta de perfil sociodemográfico y antecedentes por DPI o ID.
+  - [x] `OP-PAC-04`: Modificación de datos de contacto o residencia.
+  - [x] `OP-PAC-05`: Baja lógica o archivado del paciente (`estado = 'archivado'` o `'fallecido'`).
+- [x] **3.2 Módulo Consultas:**
+  - [x] `OP-CON-01`: Programar cita / consulta médica.
+  - [x] `OP-CON-02`: Atender consulta capturando motivo, notas clínicas y marcando estado `atendida`.
+  - [x] `OP-CON-03`: Cancelar o reprogramar cita médica.
+  - [x] `OP-CON-04`: Listar consultas por médico y fecha.
+- [x] **3.3 Módulo Diagnóstico y Farmacoterapia:**
+  - [x] `OP-FAR-01`: Asignar uno o más diagnósticos (con CIE-10) a una consulta atendida.
+  - [x] `OP-FAR-02`: Crear plan de tratamiento vinculado al diagnóstico.
+  - [x] `OP-FAR-03`: Generar recetas con medicamentos dosificados vinculados al tratamiento.
+  - [x] `OP-FAR-04`: Consultar historial farmacoterapéutico completo del paciente a lo largo del tiempo.
+- [x] **3.4 Módulo Seguridad y Sesiones (Enrutamiento):**
+  - [x] `OP-SEC-01`: Autenticación de credenciales (hash comparison) y verificación de usuario activo.
+  - [x] `OP-SEC-02`: Enrutamiento transparente a la base de datos de la institución correspondiente.
+  - [x] `OP-SEC-03`: Registro de auditoría con timestamp de último acceso.
 
 ### Fase 4: Interfaz de Usuario y Experiencia Homogénea
-- [ ] **4.1** Mantener la interfaz visual idéntica independientemente del motor conectado.
-- [ ] **4.2** El usuario ve un indicador sutil de la institución y motor activo (ej. *"Conectado a: Hospital General (PostgreSQL)"*).
-- [ ] **4.3** Aplicar control de vistas RBAC en la UI:
+- [x] **4.1** Mantener la interfaz visual idéntica independientemente del motor conectado.
+- [x] **4.2** El usuario ve un indicador sutil de la institución y motor activo (ej. *"Conectado a: Hospital General (PostgreSQL)"*).
+- [x] **4.3** Aplicar control de vistas RBAC en la UI:
   - Ocultar expedientes clínicos confidenciales/restringidos a secretarias.
   - Habilitar creación de recetas y diagnósticos únicamente a médicos.
-- [ ] **4.4** Formulario ágil para registro completo: Paciente -> Consulta -> Diagnóstico -> Tratamiento + Receta.
+- [x] **4.4** Formulario ágil para registro completo: Paciente -> Consulta -> Diagnóstico -> Tratamiento + Receta.
 
 ### Fase 5: Documento Comparativo y Verificación
-- [ ] **5.1** Redactar análisis de transacciones ACID vs. Atómicas en documento Markdown.
-- [ ] **5.2** Redactar análisis de seguridad (RBAC) en documento Markdown.
-- [ ] **5.3** Redactar la justificación institucional para los 4 motores.
-- [ ] **5.4** Ejecutar pruebas cruzadas: Realizar exactamente las mismas 4 operaciones clínicas (Alta Paciente, Consulta, Diagnóstico, Receta y Archivo) en los 4 motores y corroborar que devuelven resultados equivalentes.
+- [x] **5.1** Redactar análisis de transacciones ACID vs. Atómicas en documento Markdown.
+- [x] **5.2** Redactar análisis de seguridad (RBAC) en documento Markdown.
+- [x] **5.3** Redactar la justificación institucional para los 4 motores.
+- [x] **5.4** Ejecutar pruebas cruzadas: Realizar exactamente las mismas 4 operaciones clínicas (Alta Paciente, Consulta, Diagnóstico, Receta y Archivo) en los 4 motores y corroborar que devuelven resultados equivalentes.
 
