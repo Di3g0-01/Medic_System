@@ -1,0 +1,10 @@
+{
+  "description": "Gestiona historiales clínicos, pacientes, citas y atención médica para redes de instituciones de salud, con acceso y herramientas adaptados a cada rol.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
