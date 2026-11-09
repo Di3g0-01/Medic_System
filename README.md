@@ -149,7 +149,7 @@ server/
   src/adapters/          postgres/ mysql/ (comparten sql/), mongo/, firestore/, central/, DatabaseAdapterFactory
   src/http/              Controladores, DTOs (zod), JWT, RBAC y presenters
   db/                    DDL, seeds, validadores, firestore.rules
-docs/                    comparativo.md, modelo-nosql.md, prueba-cruzada.md
+docs/                    diagramas.md (+ diagramas/*.svg), comparativo.md, modelo-nosql.md, prueba-cruzada.md
 docker-compose.yml
 ```
 
@@ -158,6 +158,7 @@ Los componentes y páginas nunca importan `src/mocks`: todo pasa por `src/servic
 ## Documentación
 
 - [`docs/comparativo.md`](docs/comparativo.md): los 4 ejes (modelado, transacciones, RBAC y justificación institución–motor) y las contradicciones entre fuentes resueltas.
+- [`docs/diagramas.md`](docs/diagramas.md): diagramas ER y relacional (sedes SQL y base central), modelos documentales de MongoDB y Firestore, arquitectura hexagonal y secuencias de login y transacción, alineados con el sistema implementado.
 - [`docs/modelo-nosql.md`](docs/modelo-nosql.md): qué se embebe y qué se referencia en MongoDB y Firestore.
 - [`docs/prueba-cruzada.md`](docs/prueba-cruzada.md): resultados de la prueba cruzada.
 - [`INSTRUCCIONES_ENTREGA_II.md`](INSTRUCCIONES_ENTREGA_II.md): guía y checklist de la entrega.

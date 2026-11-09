@@ -37,7 +37,7 @@ Antes de codificar, se deben resolver las inconsistencias detectadas en la retro
    - Incluir `estado` ('programada', 'atendida', 'cancelada') e `id_institucion` (FK obligatoria) en `consulta`.
    - *Signos vitales:* Los signos vitales pediátricos van formalmente en `registro_crecimiento` (`id_consulta`, `peso_kg`, `talla_cm`, `perimetro_cefalico`). Para consultas generales de adultos se registran en `notas_clinicas` para no desnormalizar el diccionario de datos.
 4. **Diagrama ER Administrativo:**
-   - *Decisión:* La entidad `institución` se relaciona con: `usuario` (1:N), `medico` (1:N), `paciente` (1:N) y `consulta` (1:N).
+   - *Decisión:* La entidad `institución` se relaciona con: `usuario` (1:N), `medico` (1:N), `paciente` (1:N) y `consulta` (1:N). Diagrama corregido: [`docs/diagramas.md`](docs/diagramas.md) §1.
 
 ---
 
@@ -74,33 +74,49 @@ Antes de codificar, se deben resolver las inconsistencias detectadas en la retro
 ## 5. Arquitectura Hexagonal: Puertos, Dominio y Adaptadores
 
 ```
-                  ┌──────────────────────────────────────────────────┐
-                  │                 DRIVERS (Primary)                │
-                  │        REST API / UI Frontend Controller         │
-                  └─────────────────────────┬────────────────────────┘
-                                            │ DTOs
-                                            ▼
-                  ┌──────────────────────────────────────────────────┐
-                  │            APPLICATION & DOMAIN LAYER            │
-                  │  - Casos de Uso (RegisterPatient, AddEncounter)  │
-                  │  - Validaciones de Reglas de Negocio             │
-                  │  - Seguridad & RBAC Enforcement                  │
-                  │                                                  │
-                  │     PUERTOS (Interfaces TypeScript puras):        │
-                  │     - IPatientRepository                         │
-                  │     - IConsultationRepository                    │
-                  │     - IClinicalRecordsRepository                 │
-                  └─────────────────────────┬────────────────────────┘
-                                            │ Dependencia de interfaz
-                                            ▼
-                  ┌──────────────────────────────────────────────────┐
-                  │            DRIVEN ADAPTERS (Secondary)           │
-                  │          Database Adapter Registry / Factory     │
-                  ├─────────────┬─────────────┬─────────────┬────────┤
-                  │  Postgres   │    MySQL    │   MongoDB   │Firestore│
-                  │   Adapter   │   Adapter   │   Adapter   │ Adapter │
-                  └─────────────┴─────────────┴─────────────┴────────┘
+                  ┌──────────────────────────────────────────────────────┐
+                  │              DRIVERS (Adaptadores primarios)         │
+                  │  Frontend React (src/services → httpClient.ts)       │
+                  │  API REST Express (server/src/http: routes, DTO zod, │
+                  │  JWT, requires(permiso), presenters)                 │
+                  └──────────────────────────┬───────────────────────────┘
+                                             │ DTOs / JWT
+                                             ▼
+                  ┌──────────────────────────────────────────────────────┐
+                  │        APLICACIÓN Y DOMINIO (sin drivers de BD)      │
+                  │  - Casos de uso: patients, appointments, encounters, │
+                  │    lab, specialty, admin, auth (OP-PAC/CON/FAR/LAB/  │
+                  │    SEC)                                              │
+                  │  - Reglas de negocio una sola vez (domain/*)         │
+                  │  - RBAC: matriz única en domain/security.ts          │
+                  │                                                      │
+                  │  PUERTOS (server/src/ports):                         │
+                  │  - IPatientPort        (IPatientRepository)          │
+                  │  - IConsultationPort   (IConsultationRepository)     │
+                  │  - IPrescriptionPort   (IClinicalEncounterRepository)│
+                  │  - ILabPort            (ILabRepository)              │
+                  │  - ICatalogPort · IDoctorPort · IAdmissionPort ·     │
+                  │    IPediatricPort                                    │
+                  │  - IAuthPort · IUserDirectoryPort · IInstitutionPort │
+                  │    · IAuditPort · IPasswordHasher                    │
+                  │  - IRepositoryResolver                               │
+                  └──────────────────────────┬───────────────────────────┘
+                                             │ Dependencia de interfaz
+                                             ▼
+                  ┌──────────────────────────────────────────────────────┐
+                  │           DRIVEN ADAPTERS (Adaptadores secundarios)  │
+                  │   DatabaseAdapterFactory (institución → motor)       │
+                  ├────────────┬────────────┬────────────┬───────────────┤
+                  │ Postgres   │  MySQL     │  MongoDB   │  Firestore    │
+                  │ Provider   │  Provider  │  Provider  │  Provider     │
+                  │ └── sql/ Sql*Repository ┘            │               │
+                  ├────────────┴────────────┴────────────┴───────────────┤
+                  │ PostgresCentralDirectory (red_central: usuarios,     │
+                  │ instituciones, bitácora) + bcryptHasher              │
+                  └──────────────────────────────────────────────────────┘
 ```
+
+> Versión gráfica y actualizada de este y del resto de los diagramas (ER, relacional, modelos NoSQL, secuencias de login y transacción): [`docs/diagramas.md`](docs/diagramas.md).
 
 ### 5.1 Definición de Puertos de Repositorio (Interfaces)
 El core de la aplicación **no importa drivers de base de datos**. Debe contar con interfaces bien segregadas:
