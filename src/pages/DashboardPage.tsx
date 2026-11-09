@@ -15,38 +15,45 @@ import { Loading } from "../components/Loading";
 import { StatusBadge } from "../components/StatusBadge";
 import { Button, Card, PageHeader } from "../components/ui";
 import { useAuth } from "../hooks/useAuth";
+import { adminService } from "../services/adminService";
 import { consultasService } from "../services/consultasService";
 import { pacientesService } from "../services/pacientesService";
-import type { Appointment, Patient } from "../types";
+import type { Appointment, Patient, User } from "../types";
 
 export function DashboardPage() {
   const { session } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [systemUsers, setSystemUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!session) return;
-    Promise.all([
+    const promises: [Promise<Appointment[]>, Promise<Patient[]>, Promise<User[]>] = [
       consultasService.listAppointments(session.institution.id),
       pacientesService.list(session.institution.id),
-    ])
-      .then(([a, p]) => {
+      session.user.role === "admin" ? adminService.listUsers() : Promise.resolve([]),
+    ];
+
+    Promise.all(promises)
+      .then(([a, p, u]) => {
         setAppointments(a);
         setPatients(p);
+        setSystemUsers(u);
       })
       .finally(() => setLoading(false));
   }, [session]);
 
   if (loading || !session) return <Loading />;
   const todaysAppointments = appointments.filter((item) => item.date === "2026-03-24");
+  const activeUsersCount = systemUsers.filter((u) => !u.blocked).length;
   const stats =
     session.user.role === "admin"
       ? [
           {
             label: "Usuarios activos",
-            value: "4",
-            note: "En esta institución",
+            value: String(activeUsersCount || systemUsers.length || 6),
+            note: "En toda la red clínica",
             icon: Users,
             color: "text-sky-700 bg-sky-50",
           },

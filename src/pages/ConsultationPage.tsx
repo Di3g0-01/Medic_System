@@ -44,41 +44,52 @@ export function ConsultationPage() {
       { medicine: "Paracetamol 500 mg", dose: "", frequency: "", duration: "", instructions: "" },
     ]);
   const save = async (attended: boolean) => {
-    const savedConsultation = await consultasService.saveConsultation({
-      id: crypto.randomUUID(),
-      patientId,
-      date: new Date().toISOString().slice(0, 10),
-      reason,
-      notes,
-      doctor: session.user.name,
-      status: attended ? "atendida" : "abierta",
-      diagnoses,
-      prescriptions,
-    });
-    if (exam) {
-      const parameterMap: Record<string, { name: string; value: string; range: string }[]> = {
-        "Hematología completa": [
-          { name: "Hemoglobina", value: "", range: "12–16 g/dL" },
-          { name: "Leucocitos", value: "", range: "4.5–11 x10³/µL" },
-        ],
-        "Perfil lipídico": [
-          { name: "Colesterol total", value: "", range: "< 200 mg/dL" },
-          { name: "Triglicéridos", value: "", range: "< 150 mg/dL" },
-        ],
-        "Glucosa en ayunas": [{ name: "Glucosa", value: "", range: "70–100 mg/dL" }],
-      };
-      await laboratorioService.create({
+    try {
+      const savedConsultation = await consultasService.saveConsultation({
+        id: crypto.randomUUID(),
         patientId,
-        consultationId: savedConsultation?.id,
-        type: exam,
-        requestedAt: new Date().toISOString().slice(0, 10),
-        status: "solicitado",
-        requestedBy: session.user.name,
-        parameters: parameterMap[exam] ?? [],
+        date: new Date().toISOString().slice(0, 10),
+        reason,
+        notes,
+        doctor: session.user.name,
+        status: attended ? "atendida" : "abierta",
+        diagnoses,
+        prescriptions,
       });
+
+      if (exam && savedConsultation?.id) {
+        const parameterMap: Record<string, { name: string; value: string; range: string }[]> = {
+          "Hematología completa": [
+            { name: "Hemoglobina", value: "", range: "12–16 g/dL" },
+            { name: "Leucocitos", value: "", range: "4.5–11 x10³/µL" },
+          ],
+          "Perfil lipídico": [
+            { name: "Colesterol total", value: "", range: "< 200 mg/dL" },
+            { name: "Triglicéridos", value: "", range: "< 150 mg/dL" },
+          ],
+          "Glucosa en ayunas": [{ name: "Glucosa", value: "", range: "70–100 mg/dL" }],
+        };
+        await laboratorioService.create({
+          patientId,
+          consultationId: savedConsultation.id,
+          type: exam,
+          requestedAt: new Date().toISOString().slice(0, 10),
+          status: "solicitado",
+          requestedBy: session.user.name,
+          parameters: parameterMap[exam] ?? [],
+        });
+      }
+
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+      setReason("");
+      setNotes("");
+      setDiagnoses([]);
+      setPrescriptions([]);
+      setExam("");
+    } catch (err) {
+      console.error("Error al guardar la consulta:", err);
     }
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
   };
   return (
     <>

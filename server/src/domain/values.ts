@@ -25,7 +25,7 @@ export function isIsoDate(value: string): boolean {
 }
 
 export function isLocalDateTime(value: string): boolean {
-  return LOCAL_DATE_TIME.test(value) && !Number.isNaN(Date.parse(`${value}:00Z`));
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(value) && !Number.isNaN(Date.parse(value.length === 16 ? `${value}:00Z` : `${value}Z`));
 }
 
 export function addDays(date: IsoDate, days: number): IsoDate {
@@ -43,6 +43,6 @@ export const systemClock: Clock = {
   now: () => {
     const d = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   },
 };

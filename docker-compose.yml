@@ -15,7 +15,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
       RC_APP_PASSWORD: rc_app_pass
-    ports: ["5432:5432"]
+    ports: ["5433:5432"]
     volumes:
       - ./server/db/postgres/00_init.sh:/docker-entrypoint-initdb.d/00_init.sh:ro
       - ./server/db/central:/sql/central:ro
@@ -74,7 +74,9 @@ services:
 
   firestore:
     build: ./server/db/firestore
-    ports: ["8080:8080"]
+    ports:
+      - "8080:8080"
+      - "4001:4001"
 
 volumes:
   pg_data:
